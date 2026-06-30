@@ -199,6 +199,11 @@
     <span>·</span>
     <input type="number" id="targetEat" min="1" max="23" value="8" step="0.5">시간 식사창
   </div>
+  <div class="fast-settings" style="margin-top:6px; align-items:center;">
+    <span id="sinceLabel">시작 시간</span>
+    <input type="datetime-local" id="sinceEdit" style="border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); font-size:11.5px; padding:3px 6px; font-family:inherit;">
+    <button id="sinceApply" style="padding:4px 10px; border-radius:8px; border:1px solid var(--line); background:var(--sage); color:#fff; font-size:11.5px; cursor:pointer;">적용</button>
+  </div>
 
   <div class="section">
     <div class="section-head">
@@ -385,6 +390,12 @@ function renderClock(){
   }
   svg.innerHTML = html;
 
+  const sinceEdit = document.getElementById("sinceEdit");
+  const sinceLocal = new Date(fastState.since);
+  sinceLocal.setMinutes(sinceLocal.getMinutes() - sinceLocal.getTimezoneOffset());
+  sinceEdit.value = sinceLocal.toISOString().slice(0,16);
+  document.getElementById("sinceLabel").textContent = fastState.status === "fasting" ? "공복 시작" : "식사 시작";
+
   const numEl=document.getElementById("clockNum");
   const lblEl=document.getElementById("clockLbl");
   const stateEl=document.getElementById("clockState");
@@ -406,6 +417,15 @@ function renderClock(){
     btn.className = "fast-toggle";
   }
 }
+
+document.getElementById("sinceApply").addEventListener("click", ()=>{
+  const val = document.getElementById("sinceEdit").value;
+  if(!val){ toast("시간을 입력해주세요"); return; }
+  fastState.since = new Date(val).toISOString();
+  saveFastState();
+  renderClock();
+  toast("시작 시간을 수정했어요");
+});
 
 document.getElementById("fastToggle").addEventListener("click", ()=>{
   fastState.status = fastState.status === "fasting" ? "eating" : "fasting";
