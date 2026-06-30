@@ -320,17 +320,17 @@ function toast(msg){
   toastTimer=setTimeout(()=>t.classList.remove("show"),1400);
 }
 
-async function loadToday(){
+function loadToday(){
   try{
-    const r = await window.storage.get("log:"+todayKey());
+    const r = (() => { try { const v = localStorage.getItem("log:"+todayKey()); return v ? {value: v} : null; } catch(e) { return null; } })();
     if(r && r.value){
       state = Object.assign({water:0,snack:null,alcohol:null,alcoholCount:1,supplements:[],meals:{}}, JSON.parse(r.value));
     }
   }catch(e){}
   render();
 }
-async function saveToday(){
-  try{ await window.storage.set("log:"+todayKey(), JSON.stringify(state)); }
+function saveToday(){
+  try{ localStorage.setItem("log:"+todayKey(), JSON.stringify(state)); }
   catch(e){ toast("저장 실패, 다시 시도해주세요"); }
 }
 
@@ -345,9 +345,9 @@ function render(){
 
 let fastState = { status:"fasting", since:new Date().toISOString(), targetFast:16, targetEat:8 };
 
-async function loadFastState(){
+function loadFastState(){
   try{
-    const r = await window.storage.get("fastState");
+    const r = (() => { try { const v = localStorage.getItem("fastState"); return v ? {value: v} : null; } catch(e) { return null; } })();
     if(r && r.value){
       fastState = Object.assign(fastState, JSON.parse(r.value));
     }
@@ -355,8 +355,8 @@ async function loadFastState(){
   document.getElementById("targetFast").value = fastState.targetFast;
   document.getElementById("targetEat").value = fastState.targetEat;
 }
-async function saveFastState(){
-  try{ await window.storage.set("fastState", JSON.stringify(fastState)); }
+function saveFastState(){
+  try{ localStorage.setItem("fastState", JSON.stringify(fastState)); }
   catch(e){ toast("저장 실패, 다시 시도해주세요"); }
 }
 
@@ -407,21 +407,21 @@ function renderClock(){
   }
 }
 
-document.getElementById("fastToggle").addEventListener("click", async ()=>{
+document.getElementById("fastToggle").addEventListener("click", ()=>{
   fastState.status = fastState.status === "fasting" ? "eating" : "fasting";
   fastState.since = new Date().toISOString();
-  await saveFastState();
+  saveFastState();
   renderClock();
   toast(fastState.status === "fasting" ? "공복을 시작했어요" : "식사 가능 시간을 시작했어요");
 });
-document.getElementById("targetFast").addEventListener("change", async (e)=>{
+document.getElementById("targetFast").addEventListener("change", (e)=>{
   fastState.targetFast = parseFloat(e.target.value) || 16;
-  await saveFastState();
+  saveFastState();
   renderClock();
 });
-document.getElementById("targetEat").addEventListener("change", async (e)=>{
+document.getElementById("targetEat").addEventListener("change", (e)=>{
   fastState.targetEat = parseFloat(e.target.value) || 8;
-  await saveFastState();
+  saveFastState();
   renderClock();
 });
 
@@ -484,24 +484,24 @@ function renderMeals(){
       state.meals[key] = Object.assign({}, state.meals[key], {
         photo: dataUrl, time: pad(now.getHours())+":"+pad(now.getMinutes())
       });
-      await saveToday();
+      saveToday();
       renderMeals();
       toast("기록했어요");
     });
   });
   c.querySelectorAll(".meal-time-input").forEach(inp=>{
-    inp.addEventListener("change", async (e)=>{
+    inp.addEventListener("change", (e)=>{
       const key = e.target.dataset.key;
       state.meals[key] = Object.assign({}, state.meals[key], {time: e.target.value});
-      await saveToday();
+      saveToday();
       toast("시간을 수정했어요");
     });
   });
   c.querySelectorAll(".meal-note").forEach(ta=>{
-    ta.addEventListener("blur", async (e)=>{
+    ta.addEventListener("blur", (e)=>{
       const key = e.target.dataset.key;
       state.meals[key] = Object.assign({}, state.meals[key], {note: e.target.value});
-      await saveToday();
+      saveToday();
     });
   });
 }
@@ -534,58 +534,58 @@ function renderSupplements(){
     const chip = document.createElement("div");
     chip.className = "supp-chip" + (state.supplements.includes(s) ? " on":"");
     chip.textContent = s;
-    chip.addEventListener("click", async ()=>{
+    chip.addEventListener("click", ()=>{
       if(state.supplements.includes(s)) state.supplements = state.supplements.filter(x=>x!==s);
       else state.supplements.push(s);
-      await saveToday();
+      saveToday();
       renderSupplements();
     });
     list.appendChild(chip);
   });
 }
 
-document.getElementById("waterPlus").addEventListener("click", async ()=>{
-  state.water++; await saveToday(); renderWater();
+document.getElementById("waterPlus").addEventListener("click", ()=>{
+  state.water++; saveToday(); renderWater();
 });
-document.getElementById("waterMinus").addEventListener("click", async ()=>{
-  state.water = Math.max(0,state.water-1); await saveToday(); renderWater();
+document.getElementById("waterMinus").addEventListener("click", ()=>{
+  state.water = Math.max(0,state.water-1); saveToday(); renderWater();
 });
-document.getElementById("snackNo").addEventListener("click", async ()=>{
-  state.snack=false; await saveToday(); renderToggles();
+document.getElementById("snackNo").addEventListener("click", ()=>{
+  state.snack=false; saveToday(); renderToggles();
 });
-document.getElementById("snackYes").addEventListener("click", async ()=>{
-  state.snack=true; await saveToday(); renderToggles();
+document.getElementById("snackYes").addEventListener("click", ()=>{
+  state.snack=true; saveToday(); renderToggles();
 });
-document.getElementById("alcNo").addEventListener("click", async ()=>{
-  state.alcohol=false; await saveToday(); renderToggles(); await renderAlcStreak();
+document.getElementById("alcNo").addEventListener("click", ()=>{
+  state.alcohol=false; saveToday(); renderToggles(); renderAlcStreak();
 });
-document.getElementById("alcYes").addEventListener("click", async ()=>{
+document.getElementById("alcYes").addEventListener("click", ()=>{
   state.alcohol=true; if(!state.alcoholCount) state.alcoholCount=1;
-  await saveToday(); renderToggles(); await renderAlcStreak();
+  saveToday(); renderToggles(); renderAlcStreak();
 });
-document.getElementById("alcPlus").addEventListener("click", async ()=>{
-  state.alcoholCount=(state.alcoholCount||1)+1; await saveToday(); renderToggles();
+document.getElementById("alcPlus").addEventListener("click", ()=>{
+  state.alcoholCount=(state.alcoholCount||1)+1; saveToday(); renderToggles();
 });
-document.getElementById("alcMinus").addEventListener("click", async ()=>{
-  state.alcoholCount=Math.max(1,(state.alcoholCount||1)-1); await saveToday(); renderToggles();
+document.getElementById("alcMinus").addEventListener("click", ()=>{
+  state.alcoholCount=Math.max(1,(state.alcoholCount||1)-1); saveToday(); renderToggles();
 });
 
-async function getRecentLogs(days){
+function getRecentLogs(days){
   const out = [];
   const now = new Date();
   for(let i=0;i<days;i++){
     const d = new Date(now); d.setDate(now.getDate()-i);
     const k = dateKey(d);
     try{
-      const r = await window.storage.get("log:"+k);
+      const r = (() => { try { const v = localStorage.getItem("log:"+k); return v ? {value: v} : null; } catch(e) { return null; } })();
       out.push({date:k, data: r && r.value ? JSON.parse(r.value) : null});
     }catch(e){ out.push({date:k, data:null}); }
   }
   return out;
 }
 
-async function renderAlcStreak(){
-  const logs = await getRecentLogs(30);
+function renderAlcStreak(){
+  const logs = getRecentLogs(30);
   let streak = 0;
   for(const l of logs){
     if(l.data && l.data.alcohol === true) break;
@@ -594,8 +594,8 @@ async function renderAlcStreak(){
   document.getElementById("alcStreak").textContent = `금주 ${streak}일째 (목표 2주 = 14일)`;
 }
 
-async function renderWeekStats(){
-  const logs = await getRecentLogs(7);
+function renderWeekStats(){
+  const logs = getRecentLogs(7);
   let waterSum=0, waterDays=0, snackFree=0, alcDays=0, fastDays=0;
   logs.forEach(l=>{
     if(!l.data) return;
@@ -615,7 +615,7 @@ async function renderWeekStats(){
   `;
 }
 
-async function renderMonthStats(){
+function renderMonthStats(){
   const now = new Date();
   const year = now.getFullYear(), month = now.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
@@ -626,7 +626,7 @@ async function renderMonthStats(){
     const d = new Date(year, month, day);
     const k = dateKey(d);
     try{
-      const r = await window.storage.get("log:"+k);
+      const r = (() => { try { const v = localStorage.getItem("log:"+k); return v ? {value: v} : null; } catch(e) { return null; } })();
       dataByDay[day] = r && r.value ? JSON.parse(r.value) : null;
     }catch(e){ dataByDay[day] = null; }
   }
