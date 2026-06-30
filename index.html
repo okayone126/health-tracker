@@ -667,8 +667,8 @@ function renderMonthStats(){
   }
 }
 
-loadFastState().then(renderClock);
-loadToday().then(()=>{ renderAlcStreak(); renderWeekStats(); renderMonthStats(); });
+loadFastState(); renderClock();
+loadToday(); renderAlcStreak(); renderWeekStats(); renderMonthStats();
 setInterval(renderClock, 60000);
 </script>
 </body>
