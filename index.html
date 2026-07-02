@@ -937,6 +937,20 @@ document.getElementById("modalSave").addEventListener("click", ()=>{
 loadFastState(); renderClock();
 loadToday(); renderAlcStreak(); renderWeekStats(); renderMonthStats();
 setInterval(renderClock, 60000);
+
+// 서비스워커 등록 (자동 업데이트)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if(newWorker.state === 'activated'){
+          toast('앱이 최신 버전으로 업데이트됐어요');
+        }
+      });
+    });
+  });
+}
 </script>
 </body>
 </html>
