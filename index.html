@@ -81,12 +81,14 @@
   .meal-photo img{width:100%; height:100%; object-fit:cover;}
   .meal-photo .plus{font-size:22px; color:var(--muted); font-weight:300;}
   .meal-body{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;}
-  .meal-row{display:flex; align-items:center; justify-content:space-between;}
+  .meal-row{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .meal-name{flex-shrink:0;}
   .meal-name{font-size:14.5px; font-weight:700;}
   .meal-time{font-size:11.5px; color:var(--muted);}
   .meal-time-input{
     border:none; background:transparent; font-size:11.5px; color:var(--muted);
-    font-family:inherit; text-align:right; padding:0;
+    font-family:inherit; text-align:right; padding:2px 0; min-width:72px; flex-shrink:0;
+    -webkit-appearance:none; appearance:none;
   }
   .meal-time-input:focus{outline:none; color:var(--ink);}
   .meal-note{
@@ -142,13 +144,63 @@
   .day-cell{
     aspect-ratio:1; border-radius:8px; background:var(--card2);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-size:10px; color:var(--muted); position:relative;
+    font-size:10px; color:var(--muted); position:relative; cursor:pointer;
+    transition: background .15s;
   }
+  .day-cell:active{background:var(--line);}
+  .day-cell.today{border:2px solid var(--sage); color:var(--sage-deep); font-weight:700;}
   .day-cell .dots{display:flex; gap:2px; margin-top:2px;}
   .day-cell .dot{width:5px; height:5px; border-radius:50%;}
   .day-cell .dot.snack-free{background:var(--good);}
   .day-cell .dot.alc{background:var(--brick);}
-  .day-cell.empty{background:transparent;}
+  .day-cell.empty{background:transparent; cursor:default;}
+
+  /* 모달 */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45);
+    z-index:100; align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--bg); border-radius:24px 24px 0 0; padding:20px 18px 40px;
+    width:100%; max-width:480px; max-height:88vh; overflow-y:auto;
+  }
+  .modal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .modal-header h3{font-size:17px; font-weight:700; margin:0;}
+  .modal-close{background:none; border:none; font-size:22px; color:var(--muted); cursor:pointer; padding:0;}
+  .modal-section{margin-bottom:18px;}
+  .modal-label{font-size:12px; color:var(--muted); margin-bottom:8px;}
+  .modal-meals{display:flex; flex-direction:column; gap:8px;}
+  .modal-meal-row{display:flex; align-items:center; gap:10px;}
+  .modal-photo{
+    width:56px; height:56px; border-radius:10px; background:var(--card2);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    cursor:pointer; border:1px dashed var(--line); flex-shrink:0;
+  }
+  .modal-photo img{width:100%; height:100%; object-fit:cover;}
+  .modal-meal-info{flex:1;}
+  .modal-meal-name{font-size:13px; font-weight:700;}
+  .modal-row{display:flex; align-items:center; gap:6px; margin-top:4px;}
+  .modal-time{border:1px solid var(--line); border-radius:6px; padding:3px 6px; font-size:11px; background:var(--bg); color:var(--ink); font-family:inherit;}
+  .modal-note{border:none; border-bottom:1px solid var(--line); background:transparent; font-size:12px; width:100%; padding:4px 0; font-family:inherit; margin-top:4px;}
+  .modal-note:focus{outline:none; border-bottom-color:var(--sage);}
+  .modal-toggle-row{display:flex; gap:8px; margin-top:6px;}
+  .modal-toggle{flex:1; padding:8px; border-radius:10px; border:1px solid var(--line); background:var(--bg); font-size:12px; cursor:pointer;}
+  .modal-toggle.active-good{background:var(--good); color:#fff; border-color:var(--good);}
+  .modal-toggle.active-bad{background:var(--brick); color:#fff; border-color:var(--brick);}
+  .modal-water-row{display:flex; align-items:center; gap:10px;}
+  .modal-water-btn{width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:var(--bg); cursor:pointer; font-size:15px;}
+  .modal-save-btn{
+    width:100%; padding:14px; border-radius:14px; border:none;
+    background:var(--sage-deep); color:#fff; font-size:15px; font-weight:700;
+    cursor:pointer; margin-top:10px;
+  }
+  .modal-supp{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .modal-chip{
+    padding:6px 12px; border-radius:20px; border:1px solid var(--line);
+    background:var(--bg); font-size:12px; cursor:pointer; color:var(--muted);
+  }
+  .modal-chip.on{background:var(--sage); color:#fff; border-color:var(--sage);}
 
   .goal-card{
     background:var(--card2); border-radius:16px; padding:14px; margin-top:10px;
@@ -290,6 +342,57 @@
     이 앱은 습관 기록과 동기부여를 돕는 도구입니다. 식이·영양제 관련 결정은 반드시 담당 의사·영양사와 상의하세요. 다음 추적: 6개월 후 동네 내과 (LDL·HDL·HbA1c·아밀라아제·리파아제), 1년 후 삼성서울병원 MRI·혈액검사.
   </div>
 
+</div>
+
+<div class="modal-overlay" id="dayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">날짜 기록</h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">끼니 기록</div>
+      <div class="modal-meals" id="modalMeals"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">물 (잔)</div>
+      <div class="modal-water-row">
+        <button class="modal-water-btn" id="modalWaterMinus">−</button>
+        <span id="modalWaterCount" style="font-size:20px; font-weight:700; min-width:28px; text-align:center;">0</span>
+        <button class="modal-water-btn" id="modalWaterPlus">+</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">과자</div>
+      <div class="modal-toggle-row">
+        <button class="modal-toggle" id="modalSnackNo">안 먹음</button>
+        <button class="modal-toggle" id="modalSnackYes">먹음</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">술</div>
+      <div class="modal-toggle-row">
+        <button class="modal-toggle" id="modalAlcNo">안 마심</button>
+        <button class="modal-toggle" id="modalAlcYes">마심</button>
+      </div>
+      <div id="modalAlcCountRow" style="display:none; align-items:center; gap:8px; margin-top:8px;">
+        <button class="modal-water-btn" id="modalAlcMinus">−</button>
+        <span id="modalAlcCount" style="font-size:16px; font-weight:700;">1</span>잔
+        <button class="modal-water-btn" id="modalAlcPlus">+</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">영양제</div>
+      <div class="modal-supp" id="modalSupp"></div>
+    </div>
+
+    <button class="modal-save-btn" id="modalSave">저장</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -676,16 +779,160 @@ function renderMonthStats(){
   for(let day=1; day<=daysInMonth; day++){
     const d = dataByDay[day];
     const c = document.createElement("div");
-    c.className = "day-cell";
+    const isToday = day === now.getDate();
+    c.className = "day-cell" + (isToday ? " today" : "");
     let dots = "";
     if(d){
       if(d.snack===false) dots += `<span class="dot snack-free"></span>`;
       if(d.alcohol===true) dots += `<span class="dot alc"></span>`;
     }
     c.innerHTML = `<span>${day}</span><span class="dots">${dots}</span>`;
+    const fullKey = `${year}-${pad(month+1)}-${pad(day)}`;
+    c.addEventListener("click", ()=> openDayModal(fullKey, day));
     cal.appendChild(c);
   }
 }
+
+// ── 날짜별 기록 모달 ──
+let modalKey = null;
+let modalState = {};
+
+function loadDayState(key){
+  try{
+    const v = localStorage.getItem("log:"+key);
+    return v ? JSON.parse(v) : {water:0,snack:null,alcohol:null,alcoholCount:1,supplements:[],meals:{}};
+  }catch(e){ return {water:0,snack:null,alcohol:null,alcoholCount:1,supplements:[],meals:{}}; }
+}
+function saveDayState(key, s){
+  try{ localStorage.setItem("log:"+key, JSON.stringify(s)); }catch(e){}
+}
+
+function openDayModal(key, day){
+  modalKey = key;
+  modalState = loadDayState(key);
+  const [y,m] = key.split("-");
+  document.getElementById("modalTitle").textContent = `${parseInt(m)}월 ${day}일 기록`;
+  renderModalMeals();
+  renderModalWater();
+  renderModalToggles();
+  renderModalSupp();
+  document.getElementById("dayModal").classList.add("open");
+}
+document.getElementById("modalClose").addEventListener("click", ()=>{
+  document.getElementById("dayModal").classList.remove("open");
+});
+document.getElementById("dayModal").addEventListener("click", (e)=>{
+  if(e.target === document.getElementById("dayModal"))
+    document.getElementById("dayModal").classList.remove("open");
+});
+
+function renderModalMeals(){
+  const MEAL_NAMES = {breakfast:"아침", lunch:"점심", dinner:"저녁", snack:"간식"};
+  const cont = document.getElementById("modalMeals");
+  cont.innerHTML = "";
+  Object.entries(MEAL_NAMES).forEach(([key, name])=>{
+    const data = (modalState.meals||{})[key] || {};
+    const row = document.createElement("div");
+    row.className = "modal-meal-row";
+    row.innerHTML = `
+      <div class="modal-photo" data-mkey="${key}">
+        ${data.photo ? `<img src="${data.photo}">` : `<span style="font-size:18px;color:var(--muted)">+</span>`}
+        <input type="file" accept="image/*" capture="environment" style="display:none" data-mkey="${key}">
+      </div>
+      <div class="modal-meal-info">
+        <div class="modal-meal-name">${name}</div>
+        <div class="modal-row">
+          <input type="time" class="modal-time" data-mkey="${key}" value="${data.time||""}">
+        </div>
+        <input type="text" class="modal-note" placeholder="메모 (선택)" data-mkey="${key}" value="${data.note||""}">
+      </div>
+    `;
+    cont.appendChild(row);
+  });
+  cont.querySelectorAll(".modal-photo").forEach(el=>{
+    el.addEventListener("click", ()=> el.querySelector("input[type=file]").click());
+  });
+  cont.querySelectorAll("input[type=file]").forEach(inp=>{
+    inp.addEventListener("change", async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const mkey = e.target.dataset.mkey;
+      const dataUrl = await compressImage(file);
+      const now = new Date();
+      if(!modalState.meals) modalState.meals = {};
+      modalState.meals[mkey] = Object.assign({}, modalState.meals[mkey], {photo:dataUrl, time:pad(now.getHours())+":"+pad(now.getMinutes())});
+      renderModalMeals();
+    });
+  });
+  cont.querySelectorAll(".modal-time").forEach(inp=>{
+    inp.addEventListener("change", e=>{
+      const mkey = e.target.dataset.mkey;
+      if(!modalState.meals) modalState.meals = {};
+      modalState.meals[mkey] = Object.assign({}, modalState.meals[mkey], {time:e.target.value});
+    });
+  });
+  cont.querySelectorAll(".modal-note").forEach(inp=>{
+    inp.addEventListener("change", e=>{
+      const mkey = e.target.dataset.mkey;
+      if(!modalState.meals) modalState.meals = {};
+      modalState.meals[mkey] = Object.assign({}, modalState.meals[mkey], {note:e.target.value});
+    });
+  });
+}
+
+function renderModalWater(){
+  document.getElementById("modalWaterCount").textContent = modalState.water||0;
+}
+document.getElementById("modalWaterPlus").addEventListener("click", ()=>{
+  modalState.water = (modalState.water||0)+1; renderModalWater();
+});
+document.getElementById("modalWaterMinus").addEventListener("click", ()=>{
+  modalState.water = Math.max(0,(modalState.water||0)-1); renderModalWater();
+});
+
+function renderModalToggles(){
+  document.getElementById("modalSnackNo").className = "modal-toggle"+(modalState.snack===false?" active-good":"");
+  document.getElementById("modalSnackYes").className = "modal-toggle"+(modalState.snack===true?" active-bad":"");
+  document.getElementById("modalAlcNo").className = "modal-toggle"+(modalState.alcohol===false?" active-good":"");
+  document.getElementById("modalAlcYes").className = "modal-toggle"+(modalState.alcohol===true?" active-bad":"");
+  const alcRow = document.getElementById("modalAlcCountRow");
+  alcRow.style.display = modalState.alcohol===true ? "flex" : "none";
+  document.getElementById("modalAlcCount").textContent = modalState.alcoholCount||1;
+}
+document.getElementById("modalSnackNo").addEventListener("click", ()=>{ modalState.snack=false; renderModalToggles(); });
+document.getElementById("modalSnackYes").addEventListener("click", ()=>{ modalState.snack=true; renderModalToggles(); });
+document.getElementById("modalAlcNo").addEventListener("click", ()=>{ modalState.alcohol=false; renderModalToggles(); });
+document.getElementById("modalAlcYes").addEventListener("click", ()=>{ modalState.alcohol=true; if(!modalState.alcoholCount) modalState.alcoholCount=1; renderModalToggles(); });
+document.getElementById("modalAlcPlus").addEventListener("click", ()=>{ modalState.alcoholCount=(modalState.alcoholCount||1)+1; renderModalToggles(); });
+document.getElementById("modalAlcMinus").addEventListener("click", ()=>{ modalState.alcoholCount=Math.max(1,(modalState.alcoholCount||1)-1); renderModalToggles(); });
+
+function renderModalSupp(){
+  const cont = document.getElementById("modalSupp");
+  cont.innerHTML = "";
+  SUPPLEMENTS.forEach(s=>{
+    const chip = document.createElement("div");
+    chip.className = "modal-chip"+(( modalState.supplements||[]).includes(s)?" on":"");
+    chip.textContent = s;
+    chip.addEventListener("click", ()=>{
+      if(!modalState.supplements) modalState.supplements=[];
+      if(modalState.supplements.includes(s)) modalState.supplements=modalState.supplements.filter(x=>x!==s);
+      else modalState.supplements.push(s);
+      renderModalSupp();
+    });
+    cont.appendChild(chip);
+  });
+}
+
+document.getElementById("modalSave").addEventListener("click", ()=>{
+  saveDayState(modalKey, modalState);
+  document.getElementById("dayModal").classList.remove("open");
+  // 오늘이면 메인 화면도 갱신
+  if(modalKey === todayKey()){
+    state = Object.assign({}, modalState);
+    render();
+  }
+  renderAlcStreak(); renderWeekStats(); renderMonthStats();
+  toast("저장했어요");
+});
 
 loadFastState(); renderClock();
 loadToday(); renderAlcStreak(); renderWeekStats(); renderMonthStats();
