@@ -324,6 +324,22 @@
 
   <div class="section">
     <div class="section-head">
+      <h2>체중 기록</h2>
+      <span class="hint">목표 50~53kg</span>
+    </div>
+    <div class="check-card">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <input type="number" id="weightInput" step="0.1" min="30" max="120" placeholder="오늘 체중 (kg)"
+          style="border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:15px; background:var(--bg); color:var(--ink); font-family:inherit; width:160px;">
+        <button id="weightSave" style="padding:8px 16px; border-radius:10px; border:none; background:var(--sage); color:#fff; font-size:13px; font-weight:700; cursor:pointer;">기록</button>
+      </div>
+      <div id="weightChart" style="margin-top:4px;"></div>
+      <div id="weightLatest" style="font-size:12px; color:var(--muted); margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
       <h2>주간 요약</h2>
       <span class="hint">최근 7일</span>
     </div>
@@ -792,6 +808,80 @@ function renderMonthStats(){
     cal.appendChild(c);
   }
 }
+
+// ── 체중 기록 ──
+function loadWeightLogs(){
+  try{ const v = localStorage.getItem("weightLogs"); return v ? JSON.parse(v) : []; }
+  catch(e){ return []; }
+}
+function saveWeightLogs(logs){
+  try{ localStorage.setItem("weightLogs", JSON.stringify(logs)); }catch(e){}
+}
+
+function renderWeightChart(){
+  const logs = loadWeightLogs();
+  const latest = document.getElementById("weightLatest");
+  const chart = document.getElementById("weightChart");
+
+  if(logs.length === 0){
+    latest.textContent = "아직 기록이 없어요. 주 1회 정도 기록해보세요.";
+    chart.innerHTML = "";
+    return;
+  }
+
+  // 최신 기록
+  const last = logs[logs.length-1];
+  const diff = last.w - 52.3;
+  const diffStr = (diff > 0 ? "+" : "") + diff.toFixed(1);
+  latest.textContent = `최근: ${last.w}kg (${last.d}) · 처음 대비 ${diffStr}kg`;
+
+  // SVG 라인 차트 (최근 10개)
+  const recent = logs.slice(-10);
+  const W = 320, H = 80, pad = 16;
+  const weights = recent.map(r => r.w);
+  const minW = Math.min(...weights) - 0.5;
+  const maxW = Math.max(...weights) + 0.5;
+  const xStep = (W - pad*2) / Math.max(recent.length-1, 1);
+
+  const toX = i => pad + i * xStep;
+  const toY = w => H - pad - ((w - minW) / (maxW - minW)) * (H - pad*2);
+
+  let points = recent.map((r,i) => `${toX(i)},${toY(r.w)}`).join(" ");
+  let dots = recent.map((r,i) => `<circle cx="${toX(i)}" cy="${toY(r.w)}" r="4" fill="var(--sage)"/>`).join("");
+  let labels = recent.map((r,i) => `<text x="${toX(i)}" y="${toY(r.w)-7}" text-anchor="middle" font-size="9" fill="var(--muted)">${r.w}</text>`).join("");
+  let dates = recent.map((r,i) => `<text x="${toX(i)}" y="${H-2}" text-anchor="middle" font-size="8" fill="var(--muted)">${r.d.slice(5)}</text>`).join("");
+
+  // 목표선 (52.3kg 기준선)
+  const targetY = toY(52.3);
+  const targetLine = (52.3 >= minW && 52.3 <= maxW)
+    ? `<line x1="${pad}" y1="${targetY}" x2="${W-pad}" y2="${targetY}" stroke="var(--clay)" stroke-width="1" stroke-dasharray="4,3"/>`
+    : "";
+
+  chart.innerHTML = `
+    <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;">
+      ${targetLine}
+      <polyline points="${points}" fill="none" stroke="var(--sage)" stroke-width="2" stroke-linejoin="round"/>
+      ${dots}${labels}${dates}
+    </svg>
+    <div style="font-size:10px; color:var(--clay); margin-top:2px;">— — 목표선 (52.3kg)</div>
+  `;
+}
+
+document.getElementById("weightSave").addEventListener("click", ()=>{
+  const val = parseFloat(document.getElementById("weightInput").value);
+  if(isNaN(val) || val < 30 || val > 120){ toast("체중을 올바르게 입력해주세요"); return; }
+  const logs = loadWeightLogs();
+  const today = todayKey();
+  const existing = logs.findIndex(l => l.d === today);
+  if(existing >= 0) logs[existing].w = val;
+  else logs.push({d: today, w: val});
+  saveWeightLogs(logs);
+  document.getElementById("weightInput").value = "";
+  renderWeightChart();
+  toast(`${val}kg 기록했어요`);
+});
+
+renderWeightChart();
 
 // ── 날짜별 기록 모달 ──
 let modalKey = null;
